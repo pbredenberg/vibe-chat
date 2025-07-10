@@ -4,7 +4,8 @@ import { useGetMessagesQuery, useCreateMessageMutation, useUpdateMessageMutation
 import { type Message } from '../store/messagesApi';
 import { useGetUserQuery } from '../store/userApi';
 import { useGetProfilesQuery } from '../store/profilesApi';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useRealtimeMessages } from '../hooks/useRealtimeMessages';
 import ConfirmModal from '../components/ConfirmModal';
 import Toast from '../components/Toast';
 import toast from 'react-hot-toast';
@@ -69,6 +70,20 @@ const ChatDetail = () => {
     }
     setFetching(false);
   }, [fetchedMessages]);
+
+  // Realtime: handle new messages
+  const handleRealtimeMessage = useCallback((msg: Message) => {
+    setMessages(prev => {
+      // Only add if not already present
+      if (prev.some(m => m.id === msg.id)) return prev;
+      return [msg, ...prev];
+    });
+  }, []);
+
+  useRealtimeMessages({
+    chatId: id!,
+    onMessage: handleRealtimeMessage,
+  });
 
   // Handle scroll to top for infinite scroll
   useEffect(() => {
