@@ -3,7 +3,8 @@ import { useGetChatsQuery } from '../store/chatsApi';
 import { useGetMessagesQuery, useCreateMessageMutation, useUpdateMessageMutation, useDeleteMessageMutation } from '../store/messagesApi';
 import { type Message } from '../store/messagesApi';
 import { useGetUserQuery } from '../store/userApi';
-import { useState, useRef, useEffect } from 'react';
+import { useGetProfilesQuery } from '../store/profilesApi';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import ConfirmModal from '../components/ConfirmModal';
 import Toast from '../components/Toast';
 import toast from 'react-hot-toast';
@@ -44,6 +45,18 @@ const ChatDetail = () => {
     { chat_id: id!, limit: 20, after },
     { skip: !id || !hasMore }
   );
+
+  // Collect all unique sender_ids from current messages
+  const senderIds = useMemo(() => Array.from(new Set(messages.map(m => m.sender_id))), [messages]);
+  const { data: profiles = [] } = useGetProfilesQuery(
+    { ids: senderIds },
+    { skip: senderIds.length === 0 }
+  );
+  const profileMap = useMemo(() => {
+    const map: Record<string, typeof profiles[0]> = {};
+    for (const p of profiles) map[p.id] = p;
+    return map;
+  }, [profiles]);
 
   // Append fetched messages
   useEffect(() => {
@@ -144,57 +157,95 @@ const ChatDetail = () => {
           {messages.length === 0 && (
             <div className="text-gray-400 text-center mt-4">No messages yet.</div>
           )}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col items-${msg.sender_id === user?.id ? 'end' : 'start'} max-w-full group`}
-            >
-              <div className="flex items-center gap-2">
-                {editingId === msg.id ? (
-                  <>
-                    <input
-                      className="px-2 py-1 rounded border max-w-xs"
-                      value={editContent}
-                      onChange={e => setEditContent(e.target.value)}
-                      disabled={isUpdating}
-                      autoFocus
-                    />
-                    <button
-                      className="text-green-600 font-bold px-2"
-                      onClick={async () => {
-                        try {
-                          await updateMessage({ id: msg.id, content: editContent }).unwrap();
-                          setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, content: editContent } : m));
-                          setEditingId(null);
-                          toast.success('Message updated');
-                        } catch (err) {
-                          toast.error('Failed to update message');
-                        }
-                      }}
-                      disabled={isUpdating || !editContent.trim()}
-                    >
-                      ✓
-                    </button>
-                    <button
-                      className="text-gray-400 font-bold px-2"
-                      onClick={() => setEditingId(null)}
-                      disabled={isUpdating}
-                    >
-                      ✗
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div
-                      className={`px-3 py-2 rounded-lg mb-1 break-words max-w-xs ${
-                        msg.sender_id === user?.id
-                          ? 'bg-blue-500 text-white self-end'
-                          : 'bg-gray-200 text-gray-900 self-start'
-                      }`}
-                    >
-                      {msg.content}
+          {/* Group consecutive messages by sender */}
+          {messages.map((msg, idx) => {
+            const prev = messages[idx - 1];
+            const showHeader = !prev || prev.sender_id !== msg.sender_id;
+            const senderProfile = profileMap[msg.sender_id];
+            const displayName = msg.sender_id === user?.id
+              ? 'You'
+              : senderProfile?.display_name || senderProfile?.email || msg.sender_id.slice(0, 8);
+            const avatarUrl = senderProfile?.avatar_url;
+            const fallbackAvatar = (
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold">
+                {displayName && displayName !== 'You' ? displayName[0].toUpperCase() : <span>👤</span>}
+              </div>
+            );
+            return (
+              <div
+                key={msg.id}
+                className={`group flex flex-col items-${msg.sender_id === user?.id ? 'end' : 'start'} mb-2`}
+              >
+                {showHeader && (
+                  msg.sender_id === user?.id ? (
+                    <div className="flex flex-row-reverse items-center gap-2 mb-1">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={displayName}
+                          className="w-8 h-8 rounded-full object-cover border"
+                        />
+                      ) : fallbackAvatar}
+                      <span className="font-semibold text-sm text-gray-700">You</span>
                     </div>
-                    {msg.sender_id === user?.id && (
+                  ) : (
+                    <div className="flex items-center gap-2 mb-1">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={displayName}
+                          className="w-8 h-8 rounded-full object-cover border"
+                        />
+                      ) : fallbackAvatar}
+                      <span className="font-semibold text-sm text-gray-700">{displayName}</span>
+                    </div>
+                  )
+                )}
+                <div
+                  className={`px-3 py-2 rounded-lg mb-1 break-words max-w-xs ${
+                    msg.sender_id === user?.id
+                      ? 'bg-blue-500 text-white self-end'
+                      : 'bg-gray-200 text-gray-900 self-start'
+                  }`}
+                >
+                  {editingId === msg.id ? (
+                    <input
+                      type="text"
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full p-2 text-sm"
+                    />
+                  ) : (
+                    msg.content
+                  )}
+                  {editingId === msg.id ? (
+                    <div className="flex gap-1">
+                      <button
+                        className="text-green-600 font-bold px-2"
+                        onClick={async () => {
+                          try {
+                            await updateMessage({ id: msg.id, content: editContent }).unwrap();
+                            setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, content: editContent } : m));
+                            setEditingId(null);
+                            toast.success('Message updated');
+                          } catch (err) {
+                            toast.error('Failed to update message');
+                          }
+                        }}
+                        disabled={isUpdating || !editContent.trim()}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        className="text-gray-400 font-bold px-2"
+                        onClick={() => setEditingId(null)}
+                        disabled={isUpdating}
+                      >
+                        ✗
+                      </button>
+                    </div>
+                  ) : (
+                    msg.sender_id === user?.id && (
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           className="text-yellow-500 text-xs px-1"
@@ -216,16 +267,15 @@ const ChatDetail = () => {
                           Delete
                         </button>
                       </div>
-                    )}
-                  </>
-                )}
+                    )
+                  )}
+                </div>
+                <span className={`text-xs text-gray-400 ${msg.sender_id === user?.id ? 'text-right self-end' : 'text-left self-start'}`}>
+                  {new Date(msg.created_at).toLocaleTimeString()}
+                </span>
               </div>
-              <span className="text-xs text-gray-400">
-                {msg.sender_id === user?.id ? 'You' : msg.sender_id.slice(0, 8)} ·{' '}
-                {new Date(msg.created_at).toLocaleTimeString()}
-              </span>
-            </div>
-          ))}
+            );
+          })}
           {loadingMessages && (
             <div className="text-center text-gray-400">Loading messages...</div>
           )}
