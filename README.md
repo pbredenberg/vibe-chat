@@ -9,6 +9,7 @@ Vibe Chat is a modern, real-time chat application built with React, TypeScript, 
 - **Styling:** Tailwind CSS
 - **Icons:** Lucide React
 - **Backend/Database:** Supabase (PostgreSQL, Auth, Storage)
+  - **Docker Desktop:** Required for the local supabase instance
 - **API:** Supabase client (supabase-js)
 - **Routing:** React Router
 - **Deployment:** Netlify (SPA redirects supported)
