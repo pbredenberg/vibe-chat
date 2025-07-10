@@ -28,6 +28,9 @@ const Header = () => {
       <div className="flex gap-4 text-base items-center">
         {user ? (
           <>
+            <Link to="/chats" className="hover:underline">
+              Chats
+            </Link>
             <Link to="/profile" className="hover:underline">
               Profile
             </Link>
