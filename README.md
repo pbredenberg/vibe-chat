@@ -1,69 +1,77 @@
-# React + TypeScript + Vite
+# Vibe Chat
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Vibe Chat is a modern, real-time chat application built with React, TypeScript, Vite, Supabase, Redux Toolkit, RTK Query, and Tailwind CSS. It features user authentication, public and private chat management, and a clean, responsive UI.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Frontend:** React, TypeScript, Vite
+- **State Management:** Redux Toolkit, RTK Query
+- **Styling:** Tailwind CSS
+- **Icons:** Lucide React
+- **Backend/Database:** Supabase (PostgreSQL, Auth, Storage)
+- **API:** Supabase client (supabase-js)
+- **Routing:** React Router
+- **Deployment:** Netlify (SPA redirects supported)
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- User authentication (sign up, log in, log out) with Supabase Auth
+- Profile management
+- Public chat list and individual chat pages
+- Authenticated users can create, edit, and delete their own chats
+- Responsive, accessible UI with Tailwind CSS
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Developer Setup
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### 1. Clone the repository
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```sh
+git clone <your-repo-url>
+cd vibe-chat
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Set Node.js version (recommended)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
+This project includes a [`.nvmrc`](./.nvmrc) file specifying the required Node.js version. If you use [nvm](https://github.com/nvm-sh/nvm):
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```sh
+nvm use
 ```
+
+### 3. Install dependencies
+
+```sh
+npm install
+```
+
+### 4. Set up environment variables
+
+- Copy `.env` from `example.env`:
+- Fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` with your Supabase project credentials.
+- **Tip:** After running `npx supabase start`, the required Supabase environment variables (URL and anon key) will be displayed in your terminal output. Copy these values into your `.env` file. See the next step.
+
+### 5. Start Supabase locally
+
+- The Supabase CLI is installed as a dev dependency. Use `npx` to run all Supabase commands:
+- Start Supabase: `npx supabase start`
+- This will launch the local database, API, Auth, and Studio. You can access Supabase Studio at [http://localhost:54323](http://localhost:54323).
+
+### 6. Start the development server
+
+```sh
+npm run dev
+```
+
+## Notes
+
+### Netlify SPA Redirects
+
+A `_redirects` file is included in `public/` to support client-side routing on Netlify:
+
+```text
+/*    /index.html   200
+```
+
+---
+
+For more details on customizing the stack or deploying to production, see the documentation for each tool or reach out to the maintainers.
