@@ -13,7 +13,7 @@ export const userApi = createApi({
     signUp: builder.mutation<User, { email: string; password: string }>({
       async queryFn({ email, password }) {
         const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) return { error };
+        if (error) return { error: { message: error.message } };
         if (!data.user) return { error: { message: 'No user returned' } };
         return { data: { id: data.user.id, email: data.user.email! } };
       },
@@ -24,7 +24,7 @@ export const userApi = createApi({
           email,
           password,
         });
-        if (error) return { error };
+        if (error) return { error: { message: error.message } };
         if (!data.user) return { error: { message: 'No user returned' } };
         return { data: { id: data.user.id, email: data.user.email! } };
       },
@@ -32,14 +32,14 @@ export const userApi = createApi({
     signOut: builder.mutation<{ success: boolean }, void>({
       async queryFn() {
         const { error } = await supabase.auth.signOut();
-        if (error) return { error };
+        if (error) return { error: { message: error.message } };
         return { data: { success: true } };
       },
     }),
     getUser: builder.query<User | null, void>({
       async queryFn() {
         const { data, error } = await supabase.auth.getUser();
-        if (error) return { error };
+        if (error) return { error: { message: error.message } };
         if (!data.user) return { data: null };
         return { data: { id: data.user.id, email: data.user.email! } };
       },
