@@ -1,9 +1,12 @@
 import { useParams } from 'react-router-dom';
 import { useGetChatsQuery } from '../store/chatsApi';
-import { useGetMessagesQuery, useCreateMessageMutation } from '../store/messagesApi';
+import { useGetMessagesQuery, useCreateMessageMutation, useUpdateMessageMutation, useDeleteMessageMutation } from '../store/messagesApi';
 import { type Message } from '../store/messagesApi';
 import { useGetUserQuery } from '../store/userApi';
 import { useState, useRef, useEffect } from 'react';
+import ConfirmModal from '../components/ConfirmModal';
+import Toast from '../components/Toast';
+import toast from 'react-hot-toast';
 import type { FormEvent } from 'react';
 
 const ChatDetail = () => {
@@ -21,6 +24,16 @@ const ChatDetail = () => {
   // Message input
   const [newMessage, setNewMessage] = useState('');
   const [sendMessage, { isLoading: isSending }] = useCreateMessageMutation();
+
+  // Message edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string>('');
+  const [updateMessage, { isLoading: isUpdating }] = useUpdateMessageMutation();
+  const [deleteMessage, { isLoading: isDeleting }] = useDeleteMessageMutation();
+
+  // Modal state for delete confirmation
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Infinite scroll ref
   const topRef = useRef<HTMLDivElement | null>(null);
@@ -89,8 +102,34 @@ const ChatDetail = () => {
     );
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-2">
-      <div className="bg-white p-4 rounded shadow w-full max-w-lg flex flex-col h-[80vh]">
+    <>
+      <Toast />
+      <ConfirmModal
+        open={deleteModalOpen}
+        title="Delete Message"
+        description="Are you sure you want to delete this message? This action cannot be undone."
+        onConfirm={async () => {
+          if (pendingDeleteId) {
+            try {
+              await deleteMessage({ id: pendingDeleteId }).unwrap();
+              setMessages(prev => prev.filter(m => m.id !== pendingDeleteId));
+              toast.success('Message deleted');
+            } catch (err) {
+              toast.error('Failed to delete message');
+            }
+          }
+          setDeleteModalOpen(false);
+          setPendingDeleteId(null);
+        }}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setPendingDeleteId(null);
+        }}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-2">
+        <div className="bg-white p-4 rounded shadow w-full max-w-lg flex flex-col h-[80vh]">
         <h2 className="text-2xl font-bold mb-2 text-center">{chat.name}</h2>
         <div className="text-center text-gray-700 mb-2">{chat.description}</div>
         <div className="text-center text-gray-400 text-xs mb-2">
@@ -108,16 +147,78 @@ const ChatDetail = () => {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex flex-col items-${msg.sender_id === user?.id ? 'end' : 'start'} max-w-full`}
+              className={`flex flex-col items-${msg.sender_id === user?.id ? 'end' : 'start'} max-w-full group`}
             >
-              <div
-                className={`px-3 py-2 rounded-lg mb-1 break-words max-w-xs ${
-                  msg.sender_id === user?.id
-                    ? 'bg-blue-500 text-white self-end'
-                    : 'bg-gray-200 text-gray-900 self-start'
-                }`}
-              >
-                {msg.content}
+              <div className="flex items-center gap-2">
+                {editingId === msg.id ? (
+                  <>
+                    <input
+                      className="px-2 py-1 rounded border max-w-xs"
+                      value={editContent}
+                      onChange={e => setEditContent(e.target.value)}
+                      disabled={isUpdating}
+                      autoFocus
+                    />
+                    <button
+                      className="text-green-600 font-bold px-2"
+                      onClick={async () => {
+                        try {
+                          await updateMessage({ id: msg.id, content: editContent }).unwrap();
+                          setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, content: editContent } : m));
+                          setEditingId(null);
+                          toast.success('Message updated');
+                        } catch (err) {
+                          toast.error('Failed to update message');
+                        }
+                      }}
+                      disabled={isUpdating || !editContent.trim()}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      className="text-gray-400 font-bold px-2"
+                      onClick={() => setEditingId(null)}
+                      disabled={isUpdating}
+                    >
+                      ✗
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className={`px-3 py-2 rounded-lg mb-1 break-words max-w-xs ${
+                        msg.sender_id === user?.id
+                          ? 'bg-blue-500 text-white self-end'
+                          : 'bg-gray-200 text-gray-900 self-start'
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+                    {msg.sender_id === user?.id && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          className="text-yellow-500 text-xs px-1"
+                          onClick={() => {
+                            setEditingId(msg.id);
+                            setEditContent(msg.content);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-red-500 text-xs px-1"
+                          onClick={() => {
+                            setDeleteModalOpen(true);
+                            setPendingDeleteId(msg.id);
+                          }}
+                          disabled={isDeleting}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
               <span className="text-xs text-gray-400">
                 {msg.sender_id === user?.id ? 'You' : msg.sender_id.slice(0, 8)} ·{' '}
@@ -149,6 +250,7 @@ const ChatDetail = () => {
         </form>
       </div>
     </div>
+    </>
   );
 };
 

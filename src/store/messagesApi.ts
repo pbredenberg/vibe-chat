@@ -46,8 +46,28 @@ export const messagesApi = createApi({
       },
       invalidatesTags: ['Messages'],
     }),
-    // Optionally add updateMessage and deleteMessage here
+    updateMessage: builder.mutation<Message, { id: string; content: string }>({
+      async queryFn({ id, content }) {
+        const { data, error } = await supabase
+          .from('messages')
+          .update({ content, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) return { error: { message: error.message } };
+        return { data: data as Message };
+      },
+      invalidatesTags: ['Messages'],
+    }),
+    deleteMessage: builder.mutation<{ id: string }, { id: string }>({
+      async queryFn({ id }) {
+        const { error } = await supabase.from('messages').delete().eq('id', id);
+        if (error) return { error: { message: error.message } };
+        return { data: { id } };
+      },
+      invalidatesTags: ['Messages'],
+    }),
   }),
 });
 
-export const { useGetMessagesQuery, useCreateMessageMutation } = messagesApi;
+export const { useGetMessagesQuery, useCreateMessageMutation, useUpdateMessageMutation, useDeleteMessageMutation } = messagesApi;
