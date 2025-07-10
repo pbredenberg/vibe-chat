@@ -5,6 +5,7 @@ import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 import Chats from './pages/Chats';
+import Home from './pages/Home';
 
 function App() {
   return (
@@ -13,16 +14,7 @@ function App() {
         <Header />
         <main className="flex-1 flex flex-col items-center justify-center px-4 w-full">
           <Routes>
-            <Route
-              path="/"
-              element={
-                <div className="flex flex-col items-center justify-center h-screen w-full">
-                  <h1 className="text-3xl font-bold text-center">
-                    Hello World
-                  </h1>
-                </div>
-              }
-            />
+            <Route path="/" element={<Home />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
