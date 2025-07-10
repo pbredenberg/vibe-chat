@@ -18,9 +18,9 @@ export type Database = {
       graphql: {
         Args: {
           operationName?: string;
-          extensions?: Json;
-          variables?: Json;
           query?: string;
+          variables?: Json;
+          extensions?: Json;
         };
         Returns: Json;
       };
@@ -60,6 +60,41 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      messages: {
+        Row: {
+          chat_id: string;
+          content: string;
+          created_at: string;
+          id: string;
+          sender_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          chat_id: string;
+          content: string;
+          created_at?: string;
+          id?: string;
+          sender_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          chat_id?: string;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          sender_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'messages_chat_id_fkey';
+            columns: ['chat_id'];
+            isOneToOne: false;
+            referencedRelation: 'chats';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       profiles: {
         Row: {
