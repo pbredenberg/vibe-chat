@@ -18,7 +18,7 @@ const Home = () => {
       ) : error ? (
         <div className="text-red-500">Error loading chats.</div>
       ) : (
-        <ul className="w-full max-w-lg space-y-2">
+        <ul className="w-full max-w-lg space-y-2 text-center">
           {chats && chats.length === 0 && (
             <li className="text-gray-500">No chats yet.</li>
           )}
