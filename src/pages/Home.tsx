@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useGetChatsQuery } from '../store/chatsApi';
 import { useGetUserQuery } from '../store/userApi';
-import { MessageCircle } from 'lucide-react';
+import { Eye, MessageCircle } from 'lucide-react';
 
 const Home = () => {
   const { data: chats, isLoading, error } = useGetChatsQuery();
@@ -28,7 +28,12 @@ const Home = () => {
                 key={chat.id}
                 className="border rounded p-3 flex flex-col gap-1"
               >
-                <span className="font-semibold text-lg">{chat.name}</span>
+                <Link
+                  to={`/chats/${chat.id}`}
+                  className="font-semibold text-lg underline flex flex-row items-center gap-2"
+                >
+                  {chat.name} <Eye className="w-4 h-4" />
+                </Link>
                 <span className="text-gray-600 text-sm">
                   {chat.description}
                 </span>
